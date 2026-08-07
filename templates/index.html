@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI 문장 이어가기 실험실</title>
+    <meta
+      name="description"
+      content="초등학생을 위한 AI 문장 이어가기 부스 데모"
+    >
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+      window.BOOTH_CONFIG = {
+        maxSteps: {{ max_steps }},
+        maxCandidates: {{ max_candidates }}
+      };
+    </script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar" aria-label="상단 정보">
+        <div>
+          <p class="eyebrow">AI Sentence Builder</p>
+          <h1>AI 문장 이어가기 실험실</h1>
+        </div>
+        <div class="status-pill" id="sourceLabel" aria-live="polite">준비 완료</div>
+      </header>
+
+      <section class="story-stage" aria-labelledby="storyTitle">
+        <div class="stage-copy">
+          <p class="eyebrow">내가 만드는 이야기</p>
+          <h2 id="storyTitle">시작 문장을 골라볼까요?</h2>
+          <p class="story-text" id="storyText" aria-live="polite"></p>
+        </div>
+        <div class="progress-wrap" aria-label="진행 단계">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span id="progressLabel">0 / {{ max_steps }}</span>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="조작">
+        <div class="imagination-control">
+          <label for="temperatureRange">상상력</label>
+          <input id="temperatureRange" type="range" min="0.2" max="1.4" value="0.8" step="0.1">
+          <div class="range-labels" aria-hidden="true">
+            <span>차분하게</span>
+            <span>보통</span>
+            <span>엉뚱하게</span>
+          </div>
+        </div>
+        <div class="button-row">
+          <button type="button" class="soft-button" id="refreshButton">다시 추천</button>
+          <button type="button" class="soft-button" id="undoButton">되돌리기</button>
+          <button type="button" class="soft-button" id="autoPickButton">AI가 하나 골라줘</button>
+          <button type="button" class="danger-button" id="resetButton">처음부터</button>
+        </div>
+      </section>
+
+      <section class="starter-zone" aria-labelledby="starterTitle">
+        <div class="section-heading">
+          <h2 id="starterTitle">시작 문장</h2>
+          <p>직접 쓰거나 예시를 눌러 시작해요.</p>
+        </div>
+        <form class="starter-form" id="starterForm">
+          <label class="sr-only" for="starterInput">시작 문장 입력</label>
+          <input
+            id="starterInput"
+            name="starter"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="예: 오늘 학교에 갔는데"
+          >
+          <button type="submit" class="primary-button">시작하기</button>
+        </form>
+        <div class="starter-chips" id="starterChips" aria-label="예시 시작 문장"></div>
+      </section>
+
+      <section class="candidate-zone" aria-labelledby="candidateTitle">
+        <div class="section-heading">
+          <h2 id="candidateTitle">AI가 생각한 다음 말</h2>
+          <p>점수는 실제 확률이 아니라 체험을 위한 AI 예상 점수예요.</p>
+        </div>
+        <div class="candidate-grid" id="candidateGrid"></div>
+      </section>
+
+      <section class="finish-panel" id="finishPanel" hidden>
+        <div class="finish-badge">완성</div>
+        <h2>이야기가 완성됐어요</h2>
+        <p class="finish-subtitle">AI와 함께 만든 나만의 이야기예요.</p>
+        <div class="final-story" id="finalStory" aria-live="polite"></div>
+        <button type="button" class="primary-button" id="finishResetButton">다시 만들기</button>
+      </section>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

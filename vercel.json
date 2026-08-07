@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/app.py"
+    }
+  ],
+  "functions": {
+    "app.py": {
+      "excludeFiles": "{sentence_builder.py,README.md,DESIGN.md,__pycache__/**,*.pyc}"
+    }
+  }
+}
