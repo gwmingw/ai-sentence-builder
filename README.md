@@ -17,7 +17,7 @@
 - 여러 사용자가 동시에 접속해도 각자 독립적으로 체험 가능
 - API 실패 또는 타임아웃 시 로컬 fallback 후보 표시
 - 후보 요청 결과를 짧게 캐싱해 반복 호출 비용과 지연 감소
-- Vercel 배포용 `vercel.json` 포함
+- Vercel의 Flask 자동 감지를 이용해 배포
 - 기존 로컬 LLM/Matplotlib MVP 파일 `sentence_builder.py`는 참고용으로 유지
 
 ## 체험 흐름
@@ -60,7 +60,6 @@
 sentence_builder/
   app.py                  # Flask 앱, API 라우트, Solar 호출, fallback 처리
   requirements.txt        # Python 의존성
-  vercel.json             # Vercel 배포 설정
   README.md               # 프로젝트 개요와 실행 방법
   DESIGN.md               # UI/디자인 가이드
   .env.example            # 환경변수 예시
@@ -197,7 +196,15 @@ Solar 모델에는 다음 조건을 강하게 요청합니다.
 
 ## 배포
 
-Vercel 배포를 고려해 `vercel.json`을 포함했습니다.
+Vercel 배포는 별도 `vercel.json` 없이 Flask 자동 감지를 사용합니다.
+
+배포에 필요한 핵심 파일은 다음과 같습니다.
+
+- `app.py`
+- `requirements.txt`
+- `templates/index.html`
+- `public/static/app.js`
+- `public/static/styles.css`
 
 배포 시 Vercel 프로젝트 환경변수에 최소한 다음 값을 등록해야 합니다.
 
@@ -207,6 +214,8 @@ UPSTAGE_MODEL=solar-mini
 ```
 
 Vercel의 서버리스 환경에서는 장시간 실행 작업이나 로컬 파일 저장에 의존하지 않아야 합니다. 현재 구조는 요청 단위로 후보를 생성하고 상태를 저장하지 않으므로 단기 부스 운영에 적합합니다.
+
+`requirements.txt`에는 `httpx==0.27.2`를 고정했습니다. 이는 `openai==1.52.2`가 최신 `httpx`와 함께 설치될 때 Vercel에서 client 생성 오류가 날 수 있어, 배포 환경을 안정화하기 위한 설정입니다.
 
 ## 검증 체크리스트
 

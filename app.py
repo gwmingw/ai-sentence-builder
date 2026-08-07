@@ -74,14 +74,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return jsonify(
-        {
-            "ok": True,
-            "model": DEFAULT_MODEL,
-            "upstage_base_url": UPSTAGE_BASE_URL,
-            "has_upstage_key": bool(os.getenv("UPSTAGE_API_KEY")),
-        }
-    )
+    return jsonify({"ok": True, "model": DEFAULT_MODEL})
 
 
 @app.post("/api/candidates")
@@ -129,15 +122,7 @@ def candidates():
     except Exception as exc:
         app.logger.warning("candidate generation fell back: %s", exc)
         fallback = build_fallback_candidates(text, count, temperature)
-        return jsonify(
-            {
-                "ok": True,
-                "candidates": fallback,
-                "source": "fallback",
-                "fallback_reason": fallback_reason(exc),
-                "fallback_error": safe_error_detail(exc),
-            }
-        )
+        return jsonify({"ok": True, "candidates": fallback, "source": "fallback"})
 
 
 EXAMPLE_STARTERS = [
@@ -304,31 +289,6 @@ def is_awkward_candidate(value: str) -> bool:
 def is_blocked(value: str) -> bool:
     lowered = value.lower()
     return any(word in lowered for word in BLOCKED_WORDS)
-
-
-def fallback_reason(exc: Exception) -> str:
-    message = str(exc)
-    if "UPSTAGE_API_KEY" in message:
-        return "missing_upstage_key"
-    name = exc.__class__.__name__
-    if name in {"AuthenticationError", "PermissionDeniedError"}:
-        return "upstage_auth_error"
-    if name in {"APIConnectionError", "APITimeoutError"}:
-        return "upstage_connection_error"
-    if name in {"BadRequestError", "NotFoundError"}:
-        return "upstage_request_error"
-    if "Solar returned no usable candidates" in message:
-        return "no_usable_candidates"
-    return "solar_exception"
-
-
-def safe_error_detail(exc: Exception) -> dict[str, str]:
-    message = str(exc).replace(os.getenv("UPSTAGE_API_KEY") or "", "[redacted]")
-    message = re.sub(r"sk-[A-Za-z0-9_\-]+", "[redacted]", message)
-    return {
-        "type": exc.__class__.__name__,
-        "message": message[:300],
-    }
 
 
 def clamp_int(value: Any, low: int, high: int) -> int:
