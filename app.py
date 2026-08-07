@@ -18,6 +18,7 @@ except ImportError:
 app = Flask(__name__, static_folder="public/static", static_url_path="/static")
 
 DEFAULT_MODEL = os.getenv("UPSTAGE_MODEL", "solar-mini")
+UPSTAGE_BASE_URL = os.getenv("UPSTAGE_BASE_URL", "https://api.upstage.ai/v1")
 DEFAULT_TEMPERATURE = float(os.getenv("DEFAULT_TEMPERATURE", "0.8"))
 MAX_CANDIDATES = int(os.getenv("MAX_CANDIDATES", "6"))
 MAX_STEPS = int(os.getenv("MAX_STEPS", "5"))
@@ -73,7 +74,14 @@ def index():
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "model": DEFAULT_MODEL})
+    return jsonify(
+        {
+            "ok": True,
+            "model": DEFAULT_MODEL,
+            "upstage_base_url": UPSTAGE_BASE_URL,
+            "has_upstage_key": bool(os.getenv("UPSTAGE_API_KEY")),
+        }
+    )
 
 
 @app.post("/api/candidates")
@@ -121,7 +129,14 @@ def candidates():
     except Exception as exc:
         app.logger.warning("candidate generation fell back: %s", exc)
         fallback = build_fallback_candidates(text, count, temperature)
-        return jsonify({"ok": True, "candidates": fallback, "source": "fallback"})
+        return jsonify(
+            {
+                "ok": True,
+                "candidates": fallback,
+                "source": "fallback",
+                "fallback_reason": fallback_reason(exc),
+            }
+        )
 
 
 EXAMPLE_STARTERS = [
@@ -135,13 +150,13 @@ EXAMPLE_STARTERS = [
 
 
 def generate_with_solar(text: str, temperature: float, count: int, step: int) -> list[dict[str, Any]]:
-    api_key = os.getenv("UPSTAGE_API_KEY")
+    api_key = (os.getenv("UPSTAGE_API_KEY") or "").strip()
     if not api_key:
         raise RuntimeError("UPSTAGE_API_KEY is not configured")
 
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key, base_url="https://api.upstage.ai/v1")
+    client = OpenAI(api_key=api_key, base_url=UPSTAGE_BASE_URL)
     system_prompt = (
         "당신은 초등학생을 위한 AI 문장 이어가기 부스의 후보 생성기입니다. "
         "현재 문장 뒤에 띄어쓰기 하나만 넣고 바로 붙였을 때 자연스러운 짧고 안전한 한국어 표현을 만듭니다. "
@@ -288,6 +303,22 @@ def is_awkward_candidate(value: str) -> bool:
 def is_blocked(value: str) -> bool:
     lowered = value.lower()
     return any(word in lowered for word in BLOCKED_WORDS)
+
+
+def fallback_reason(exc: Exception) -> str:
+    message = str(exc)
+    if "UPSTAGE_API_KEY" in message:
+        return "missing_upstage_key"
+    name = exc.__class__.__name__
+    if name in {"AuthenticationError", "PermissionDeniedError"}:
+        return "upstage_auth_error"
+    if name in {"APIConnectionError", "APITimeoutError"}:
+        return "upstage_connection_error"
+    if name in {"BadRequestError", "NotFoundError"}:
+        return "upstage_request_error"
+    if "Solar returned no usable candidates" in message:
+        return "no_usable_candidates"
+    return "solar_exception"
 
 
 def clamp_int(value: Any, low: int, high: int) -> int:
