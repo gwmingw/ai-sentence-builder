@@ -135,6 +135,7 @@ def candidates():
                 "candidates": fallback,
                 "source": "fallback",
                 "fallback_reason": fallback_reason(exc),
+                "fallback_error": safe_error_detail(exc),
             }
         )
 
@@ -319,6 +320,15 @@ def fallback_reason(exc: Exception) -> str:
     if "Solar returned no usable candidates" in message:
         return "no_usable_candidates"
     return "solar_exception"
+
+
+def safe_error_detail(exc: Exception) -> dict[str, str]:
+    message = str(exc).replace(os.getenv("UPSTAGE_API_KEY") or "", "[redacted]")
+    message = re.sub(r"sk-[A-Za-z0-9_\-]+", "[redacted]", message)
+    return {
+        "type": exc.__class__.__name__,
+        "message": message[:300],
+    }
 
 
 def clamp_int(value: Any, low: int, high: int) -> int:
